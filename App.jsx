@@ -1,63 +1,115 @@
 import { useState } from 'react'
-
 import './App.css'
 
 function App() {
- 
-  const [todos, setTodos] = useState([])
-  const [inputValue, setInputValue] = useState('')
+  const [city, setCity] = useState('')
+  const [weather, setWeather] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function addTodo() {
-    if (inputValue.trim() !== '') {
-      setTodos([...todos, { id: Date.now(), text: inputValue.trim(), completed: false }])
-      setInputValue('')
+  const API_KEY = 'YOUR_API_KEY'
 
+  function handleChange(e) {
+    setCity(e.target.value)
+  }
+
+  async function searchWeather() {
+    if (city.trim() === '') {
+      setError('Please enter a city name')
+      return
     }
-  }
 
-  function deleteTodo(id) {
-    setTodos(todos.filter((todo) => todo.id !== id))
-  }
-  function toggleTodo(id) {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    setLoading(true)
+    setError('')
+    setWeather(null)
+
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
       )
-    )
-  }
-  function deleteAllTodos() {
-    setTodos([])
+
+      if (!response.ok) {
+        throw new Error('City not found')
+      }
+
+      const data = await response.json()
+
+      setWeather(data)
+    } catch (error) {
+      setError(error.message)
+    }
+
+    setLoading(false)
   }
 
   return (
-    <>
-      <h1>To-Do App</h1>
-      {/* <h1>{count}</h1>
-    <button onClick={() => setCount(count + 1)}>Add</button> */}
-      <input id="input"
-        type="text" 
-        placeholder="Add a new task" 
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-      />
-      <button className="add-button"
-        onClick={addTodo}
-      >Add Task</button>
-      <div className="todo-btns">
-        {todos.map((todo) => (
-          <li style={{textDecoration: todo.completed ? 'line-through' : 'none'}} key={todo.id}>{todo.text}
-          <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          {/* <button onClick={() => toggleTodo(todo.id)}> Complete</button> */}
-          <button onClick={() => toggleTodo(todo.id)}>{todo.completed ? 'Undo' : 'Complete'}</button>
-          </li>
-        ))}
-        <button className="add-button" onClick={deleteAllTodos}>Delete All Tasks</button>
-        </div>
-       
-    </>
+    <div className="app">
 
-      
-    
+      <h1>🌦️ Weather Forecast</h1>
+
+      <div className="search-box">
+        <input
+          type="text"
+          placeholder="Enter city name"
+          value={city}
+          onChange={handleChange}
+        />
+
+        <button onClick={searchWeather}>
+          Search
+        </button>
+      </div>
+
+      {loading && <p>Loading weather...</p>}
+
+      {error && <p className="error">{error}</p>}
+
+      {weather && (
+        <div className="weather-card">
+
+          <h2>
+            {weather.name}, {weather.sys.country}
+          </h2>
+
+          <img
+            src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
+            alt={weather.weather[0].description}
+          />
+
+          <h3>{Math.round(weather.main.temp)}°C</h3>
+
+          <p>
+            {weather.weather[0].description}
+          </p>
+
+          <div className="weather-info">
+
+            <div>
+              <strong>Feels Like</strong>
+              <p>{Math.round(weather.main.feels_like)}°C</p>
+            </div>
+
+            <div>
+              <strong>Humidity</strong>
+              <p>{weather.main.humidity}%</p>
+            </div>
+
+            <div>
+              <strong>Wind</strong>
+              <p>{weather.wind.speed} m/s</p>
+            </div>
+
+            <div>
+              <strong>Pressure</strong>
+              <p>{weather.main.pressure} hPa</p>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+    </div>
   )
 }
 
